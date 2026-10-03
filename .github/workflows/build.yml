@@ -1,8 +1,18 @@
-name: Build & Push Docker Images
+name: Manual Publish (Explicit Approval Required)
 
+# Publication is disabled for pushes, PRs and every automatic event.
+# A manual dispatch also does nothing unless its boolean confirmation is true.
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish images/releases and deploy the Worker (requires explicit authorization)'
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
 
 env:
   REGISTRY: ghcr.io
@@ -11,6 +21,7 @@ env:
 jobs:
   # ── 主应用（Go + Vue 前端）──────────────────────────────────────────────
   build-app:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish == true }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -38,10 +49,10 @@ jobs:
 
   # ── HF Space 服务 A ──────────────────────────────────────────────────────
   build-openai-worker:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish == true }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      packages: write
     steps:
       - uses: actions/checkout@v4
 
@@ -65,10 +76,10 @@ jobs:
 
   # ── HF Space 服务 B ──────────────────────────────────────────────────────
   build-grok-worker:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish == true }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      packages: write
     steps:
       - uses: actions/checkout@v4
 
@@ -92,6 +103,7 @@ jobs:
 
   # ── HF Space 服务 C（Kiro 注册 browser-agent）───────────────────────────
   build-kiro-reg:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish == true }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -114,6 +126,7 @@ jobs:
 
   # ── HF Space 服务 D（Gemini 注册 gemini-agent）────────────────────────────
   build-gemini-reg:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish == true }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -136,6 +149,7 @@ jobs:
 
   # ── HF Space 服务 E ──────────────────────────────────────────────────────
   build-ts-solver:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish == true }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -162,6 +176,7 @@ jobs:
 
   # ── Mac Mini 完整镜像（5 个服务）─────────────────────────────────────────
   build-macmini-openai:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish == true }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -189,6 +204,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=macmini-openai
 
   build-macmini-grok:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish == true }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -216,6 +232,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=macmini-grok
 
   build-macmini-kiro:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish == true }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -243,6 +260,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=macmini-kiro
 
   build-macmini-gemini:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish == true }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -270,6 +288,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=macmini-gemini
 
   build-macmini-ts:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish == true }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -296,8 +315,9 @@ jobs:
           cache-from: type=gha,scope=macmini-ts
           cache-to: type=gha,mode=max,scope=macmini-ts
 
-  # ── Cloudflare Worker 自动部署 ─────────────────────────────────────────
+  # ── Cloudflare Worker 手动部署（显式确认后） ─────────────────────────────────────────
   deploy-cf-worker:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish == true }}
     runs-on: ubuntu-latest
     needs: build-app
     steps:
